@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,10 +55,11 @@ import com.w2sv.wifiwidget.ui.designsystem.AppSnackbarVisuals
 import com.w2sv.wifiwidget.ui.designsystem.HomeScreenCardBackground
 import com.w2sv.wifiwidget.ui.designsystem.LocalSnackbarHostState
 import com.w2sv.wifiwidget.ui.designsystem.SnackbarKind
+import com.w2sv.wifiwidget.ui.designsystem.dismissCurrentAndShow
 import com.w2sv.wifiwidget.ui.designsystem.nestedContentBackground
-import com.w2sv.wifiwidget.ui.designsystem.showSnackbarAndDismissCurrentIfApplicable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
@@ -67,10 +69,7 @@ import kotlinx.coroutines.launch
 import slimber.log.i
 
 @Composable
-fun WifiPropertyDisplay(
-    propertiesViewData: Flow<WifiProperty.ViewData>,
-    modifier: Modifier = Modifier
-) {
+fun WifiPropertyDisplay(propertiesViewData: Flow<WifiProperty.ViewData>, modifier: Modifier = Modifier) {
     val viewDataList = rememberRefreshingViewDataList(viewDataFlow = propertiesViewData)
 
     AnimatedVisibility(
@@ -116,8 +115,10 @@ private fun PropertyLoadingView(modifier: Modifier = Modifier) {
 
 @Immutable
 private sealed interface PropertyListElement {
+
+    @JvmInline
     @Immutable
-    data class Property(val property: WifiProperty.ViewData) : PropertyListElement
+    value class Property(val property: WifiProperty.ViewData) : PropertyListElement
 
     @Immutable
     data object LoadingAnimation : PropertyListElement
@@ -165,10 +166,7 @@ private fun rememberRefreshingViewDataList(viewDataFlow: Flow<WifiProperty.ViewD
 }
 
 @Composable
-private fun PropertyList(
-    viewDataList: ImmutableList<PropertyListElement>,
-    modifier: Modifier = Modifier
-) {
+private fun PropertyList(viewDataList: ImmutableList<PropertyListElement>, modifier: Modifier = Modifier) {
     val onPropertyRowClick = rememberOnPropertyRowClick()
 
     LazyColumn(
@@ -198,11 +196,12 @@ private fun PropertyList(
                             .heightIn(min = 26.dp)
                             .padding(horizontal = horizontalPadding)
                     )
-                    viewData.property.ipPropertyOrNull?.prefixLengthText?.let {
-                        PrefixLengthDisplayRow(
-                            prefixLengthText = it,
+                    viewData.property.ipPropertyOrNull?.nonEmptySubPropertyValuesOrNull?.let { subPropertyValues ->
+                        SubPropertyValueRow(
+                            values = subPropertyValues.toPersistentList(),
                             modifier = Modifier
                                 .padding(horizontal = horizontalPadding)
+                                .padding(bottom = 2.dp)
                                 .fillMaxWidth()
                         )
                     }
@@ -259,7 +258,7 @@ private fun rememberOnPropertyRowClick(): OnPropertyRowClick {
         { viewData, label, scope ->
             clipboardManager.setText(AnnotatedString(viewData.value))
             scope.launch {
-                snackbarHostState.showSnackbarAndDismissCurrentIfApplicable(
+                snackbarHostState.dismissCurrentAndShow(
                     AppSnackbarVisuals(
                         msg = buildAnnotatedString {
                             append("${context.getString(R.string.copied)} ")
@@ -322,19 +321,23 @@ private fun PropertyDisplayRow(
 }
 
 @Composable
-private fun PrefixLengthDisplayRow(
-    prefixLengthText: String,
-    modifier: Modifier = Modifier
-) {
+private fun SubPropertyValueRow(values: ImmutableList<String>, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
     ) {
-        Text(
-            text = prefixLengthText,
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 14.sp
-        )
+        values.forEach {
+            Text(
+                text = it,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    .padding(horizontal = 8.dp)
+            )
+        }
     }
 }

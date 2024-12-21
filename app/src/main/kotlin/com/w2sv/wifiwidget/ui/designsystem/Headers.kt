@@ -27,10 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun BackButtonHeaderWithDivider(
+fun BackButtonHeaderWithBottomDivider(
     title: String,
     onBackButtonClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailingIcon: (@Composable () -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -51,8 +52,13 @@ fun BackButtonHeaderWithDivider(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
+                maxLines = 1
             )
+            trailingIcon?.let {
+                Spacer(Modifier.weight(1f))
+                it()
+            }
         }
         HorizontalDivider(modifier = Modifier.padding(top = 14.dp))
     }
@@ -64,14 +70,12 @@ fun BackButtonHeaderWithDivider(
 
 data class IconHeaderProperties(
     @DrawableRes val iconRes: Int,
-    @StringRes val stringRes: Int
+    @StringRes val stringRes: Int,
+    val trailingIcon: (@Composable () -> Unit)? = null
 )
 
 @Composable
-fun IconHeader(
-    properties: IconHeaderProperties,
-    modifier: Modifier = Modifier
-) {
+fun IconHeader(properties: IconHeaderProperties, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -92,6 +96,8 @@ fun IconHeader(
                 color = MaterialTheme.colorScheme.tertiary
             )
         }
-        Spacer(modifier = Modifier.weight(0.3f))
+        Box(modifier = Modifier.weight(0.3f), contentAlignment = Alignment.Center) {
+            properties.trailingIcon?.invoke()
+        }
     }
 }

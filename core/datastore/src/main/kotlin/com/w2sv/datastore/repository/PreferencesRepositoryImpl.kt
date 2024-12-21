@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.w2sv.androidutils.os.dynamicColorsSupported
+import com.w2sv.datastoreutils.datastoreflow.DataStoreFlow
 import com.w2sv.datastoreutils.preferences.PreferencesDataStoreRepository
 import com.w2sv.domain.model.Theme
 import com.w2sv.domain.repository.PreferencesRepository
@@ -18,11 +19,14 @@ internal class PreferencesRepositoryImpl @Inject constructor(
     PreferencesRepository {
 
     override val inAppTheme =
-        dataStoreFlow(intPreferencesKey("inAppTheme"), Theme.Default)
+        enumDataStoreFlow(intPreferencesKey("inAppTheme")) { Theme.Default }
 
     override val useDynamicTheme =
-        dataStoreFlow(booleanPreferencesKey("useDynamicTheme"), dynamicColorsSupported)
+        dataStoreFlow(booleanPreferencesKey("useDynamicTheme")) { dynamicColorsSupported }
 
     override val useAmoledBlackTheme =
-        dataStoreFlow(booleanPreferencesKey("useAmoledBlackTheme"), false)
+        dataStoreFlow(booleanPreferencesKey("useAmoledBlackTheme")) { false }
+
+    override val propertyReorderingDiscoveryShown: DataStoreFlow<Boolean> =
+        dataStoreFlow(booleanPreferencesKey("propertyReorderingDiscoveryShown")) { false }
 }

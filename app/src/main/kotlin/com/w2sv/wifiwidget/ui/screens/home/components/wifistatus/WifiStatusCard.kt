@@ -1,7 +1,6 @@
 package com.w2sv.wifiwidget.ui.screens.home.components.wifistatus
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -15,10 +14,7 @@ import com.w2sv.wifiwidget.ui.designsystem.IconHeaderProperties
 import com.w2sv.wifiwidget.ui.screens.home.components.wifistatus.model.WifiState
 
 @Composable
-fun WifiStatusCard(
-    wifiState: WifiState,
-    modifier: Modifier = Modifier
-) {
+fun WifiStatusCard(wifiState: WifiState, modifier: Modifier = Modifier) {
     ElevatedIconHeaderCard(
         iconHeaderProperties = IconHeaderProperties(
             iconRes = R.drawable.ic_network_check_24,
@@ -31,17 +27,15 @@ fun WifiStatusCard(
             // Display WifiProperties if wifiState is WifiState.Connected
             AnimatedVisibility(visible = wifiState is WifiState.Connected) {
                 wifiState.connectedOrNull?.let {
-                    Column { // TODO: why?
-                        WifiPropertyDisplay(
-                            propertiesViewData = it.viewDataFlow,
-                            modifier = Modifier
-                                .padding(top = 12.dp)
-                                .thenIf(
-                                    condition = isPortraitModeActive,
-                                    onTrue = { fillMaxHeight(0.32f) }
-                                )
-                        )
-                    }
+                    WifiPropertyDisplay(
+                        propertiesViewData = it.viewDataFlow,
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .thenIf(
+                                condition = isPortraitModeActive,
+                                onTrue = { fillMaxHeight(0.32f) }
+                            )
+                    )
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.w2sv.wifiwidget.ui.designsystem
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
@@ -28,14 +29,19 @@ fun InfoIcon(
 }
 
 @Composable
-fun KeyboardArrowRightIcon(
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
-) {
+fun KeyboardArrowRightIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
     Icon(
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,
         modifier = modifier,
+        tint = tint
+    )
+}
+
+@Composable
+fun SubPropertyKeyboardArrowRightIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    KeyboardArrowRightIcon(
+        modifier = modifier.size(20.dp),
         tint = tint
     )
 }

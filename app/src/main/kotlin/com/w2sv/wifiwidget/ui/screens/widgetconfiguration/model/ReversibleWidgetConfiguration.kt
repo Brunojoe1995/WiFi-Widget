@@ -6,6 +6,7 @@ import com.w2sv.domain.model.WidgetBottomBarElement
 import com.w2sv.domain.model.WidgetColoring
 import com.w2sv.domain.model.WidgetRefreshingParameter
 import com.w2sv.domain.model.WifiProperty
+import com.w2sv.kotlinutils.coroutines.flow.mapState
 import com.w2sv.reversiblestate.ReversibleStateFlow
 import com.w2sv.reversiblestate.ReversibleStateMap
 import com.w2sv.reversiblestate.ReversibleStatesComposition
@@ -20,6 +21,7 @@ class ReversibleWidgetConfiguration(
     val opacity: ReversibleStateFlow<Float>,
     val fontSize: ReversibleStateFlow<FontSize>,
     val wifiProperties: ReversibleStateMap<WifiProperty, Boolean>,
+    val orderedWifiProperties: ReversibleStateFlow<List<WifiProperty>>,
     val ipSubProperties: ReversibleStateMap<WifiProperty.IP.SubProperty, Boolean>,
     val bottomRowMap: ReversibleStateMap<WidgetBottomBarElement, Boolean>,
     val refreshInterval: ReversibleStateFlow<Duration>,
@@ -32,6 +34,7 @@ class ReversibleWidgetConfiguration(
         opacity,
         fontSize,
         wifiProperties,
+        orderedWifiProperties,
         ipSubProperties,
         bottomRowMap,
         refreshInterval,
@@ -62,4 +65,10 @@ class ReversibleWidgetConfiguration(
             else -> Unit
         }
     }
+
+    fun restoreDefaultPropertyOrder() {
+        orderedWifiProperties.value = WifiProperty.entries
+    }
+
+    val propertiesInDefaultOrder = orderedWifiProperties.mapState { it == WifiProperty.entries }
 }

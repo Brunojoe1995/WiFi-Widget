@@ -16,10 +16,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 @Retention(AnnotationRetention.BINARY)
 annotation class MakeSnackbarVisualsFlow
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class WidgetPinSuccessFlow
-
 @InstallIn(SingletonComponent::class)
 @Module
 object AppModule {
@@ -28,12 +24,6 @@ object AppModule {
     @Provides
     @Singleton
     fun mutableSnackbarVisualsFlow(): MutableSharedFlow<(Context) -> SnackbarVisuals> =
-        MutableSharedFlow()
-
-    @WidgetPinSuccessFlow
-    @Provides
-    @Singleton
-    fun mutableWidgetPinSuccessFlow(): MutableSharedFlow<Unit> =
         MutableSharedFlow()
 
     @Provides

@@ -5,10 +5,14 @@ import androidx.annotation.StringRes
 import com.w2sv.core.domain.R
 import kotlinx.coroutines.flow.Flow
 
-sealed interface WifiProperty : WidgetProperty {
-    val descriptionRes: Int
-    val learnMoreUrl: String?
-    val defaultIsEnabled: Boolean
+sealed class WifiProperty : WidgetProperty {
+    abstract val descriptionRes: Int
+    abstract val learnMoreUrl: String?
+    abstract val defaultIsEnabled: Boolean
+
+    val ordinal by lazy {
+        entries.indexOf(this)
+    }
 
     sealed interface ViewData {
         val label: String
@@ -23,29 +27,30 @@ sealed interface WifiProperty : WidgetProperty {
         data class IPProperty(
             override val label: String,
             override val value: String,
-            val prefixLengthText: String?
-        ) : ViewData
+            private val subPropertyValues: List<String>
+        ) : ViewData {
+
+            val nonEmptySubPropertyValuesOrNull: List<String>?
+                get() = subPropertyValues.ifEmpty { null }
+        }
 
         interface Factory {
             /**
              * @return Flow of [ViewData], the element-order of which corresponds to the one of the [properties].
              * One [WifiProperty] may result in the the creation of multiple [ViewData] elements.
              */
-            operator fun invoke(
-                properties: Iterable<WifiProperty>,
-                ipSubProperties: Set<IP.SubProperty>
-            ): Flow<ViewData>
+            operator fun invoke(properties: Iterable<WifiProperty>, ipSubProperties: Set<IP.SubProperty>): Flow<ViewData>
         }
     }
 
-    sealed interface NonIP : WifiProperty {
+    sealed class NonIP : WifiProperty() {
 
         sealed class LocationAccessRequiring(
             @StringRes override val labelRes: Int,
             @StringRes override val descriptionRes: Int,
             override val learnMoreUrl: String?,
             override val defaultIsEnabled: Boolean
-        ) : NonIP {
+        ) : NonIP() {
 
             data object SSID : LocationAccessRequiring(
                 R.string.ssid,
@@ -72,7 +77,7 @@ sealed interface WifiProperty : WidgetProperty {
             @StringRes override val descriptionRes: Int,
             override val learnMoreUrl: String?,
             override val defaultIsEnabled: Boolean
-        ) : NonIP {
+        ) : NonIP() {
 
             data object Frequency : Other(
                 R.string.frequency,
@@ -216,14 +221,18 @@ sealed interface WifiProperty : WidgetProperty {
         }
     }
 
-    sealed class IP(subPropertyKinds: List<SubProperty.Kind>) : WifiProperty {
+    sealed class IP(subPropertyKinds: List<SubProperty.Kind>) : WifiProperty() {
 
+        @get:StringRes
         abstract val subscriptResId: Int
 
         val subProperties = subPropertyKinds.map { SubProperty(this, it) }
 
         val showPrefixLengthSubProperty: SubProperty
             get() = SubProperty(this, SubProperty.Kind.ShowPrefixLength)
+
+        val showSubnetMaskSubProperty: SubProperty
+            get() = SubProperty(this, SubProperty.Kind.ShowSubnetMask)
 
         data class SubProperty(val property: IP, val kind: Kind) : WidgetProperty {
 
@@ -232,6 +241,7 @@ sealed interface WifiProperty : WidgetProperty {
 
             sealed class Kind(@StringRes val labelRes: Int) {
                 data object ShowPrefixLength : Kind(R.string.show_prefix_length)
+                data object ShowSubnetMask : Kind(R.string.show_ipv4_subnet_mask)
             }
 
             val isAddressTypeEnablementProperty: Boolean
@@ -278,6 +288,7 @@ sealed interface WifiProperty : WidgetProperty {
                 add(AddressTypeEnablement.V6Enabled)
                 if (includePrefixLength) {
                     add(SubProperty.Kind.ShowPrefixLength)
+                    add(SubProperty.Kind.ShowSubnetMask)
                 }
             }
         ) {
@@ -366,7 +377,8 @@ sealed interface WifiProperty : WidgetProperty {
     }
 
     companion object {
-        val entries: List<WifiProperty>
-            get() = NonIP.LocationAccessRequiring.entries + IP.entries + NonIP.Other.entries
+        val entries: List<WifiProperty> by lazy {
+            NonIP.LocationAccessRequiring.entries + IP.entries + NonIP.Other.entries
+        }
     }
 }

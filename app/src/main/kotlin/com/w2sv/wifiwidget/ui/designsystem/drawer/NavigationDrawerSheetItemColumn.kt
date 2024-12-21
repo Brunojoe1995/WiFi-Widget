@@ -35,15 +35,15 @@ import androidx.core.app.ShareCompat
 import com.w2sv.androidutils.openUrl
 import com.w2sv.androidutils.os.dynamicColorsSupported
 import com.w2sv.androidutils.packagePlayStoreUrl
+import com.w2sv.androidutils.startActivity
 import com.w2sv.androidutils.widget.showToast
-import com.w2sv.common.constants.AppUrl
-import com.w2sv.common.utils.startActivityWithActivityNotFoundExceptionHandling
+import com.w2sv.common.AppUrl
 import com.w2sv.composed.OnChange
 import com.w2sv.composed.extensions.thenIfNotNull
 import com.w2sv.wifiwidget.R
 import com.w2sv.wifiwidget.ui.designsystem.RightAligned
 import com.w2sv.wifiwidget.ui.designsystem.ThemeSelectionRow
-import com.w2sv.wifiwidget.ui.theme.onSurfaceVariantDecreasedAlpha
+import com.w2sv.wifiwidget.ui.theme.alphaDecreasedOnSurfaceVariant
 import com.w2sv.wifiwidget.ui.utils.LocalUseDarkTheme
 import com.w2sv.wifiwidget.ui.utils.OptionalAnimatedVisibility
 
@@ -129,7 +129,7 @@ internal fun NavigationDrawerSheetItemColumn(
                     labelRes = R.string.rate,
                     explanationRes = R.string.rate_the_app_in_the_playstore,
                     type = NavigationDrawerSheetElement.Item.Clickable {
-                        context.startActivityWithActivityNotFoundExceptionHandling(
+                        context.startActivity(
                             intent = Intent(
                                 Intent.ACTION_VIEW,
                                 Uri.parse(context.packagePlayStoreUrl)
@@ -256,10 +256,7 @@ private sealed interface NavigationDrawerSheetElement {
 }
 
 @Composable
-private fun SubHeader(
-    @StringRes titleRes: Int,
-    modifier: Modifier = Modifier
-) {
+private fun SubHeader(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
     Text(
         text = stringResource(id = titleRes),
         modifier = modifier,
@@ -269,10 +266,7 @@ private fun SubHeader(
 }
 
 @Composable
-private fun Item(
-    item: NavigationDrawerSheetElement.Item,
-    modifier: Modifier = Modifier
-) {
+private fun Item(item: NavigationDrawerSheetElement.Item, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .thenIfNotNull(item.type.clickableOrNull) {
@@ -285,7 +279,7 @@ private fun Item(
         item.explanationRes?.let {
             Text(
                 text = stringResource(id = it),
-                color = MaterialTheme.colorScheme.onSurfaceVariantDecreasedAlpha,
+                color = MaterialTheme.colorScheme.alphaDecreasedOnSurfaceVariant,
                 modifier = Modifier.padding(start = iconSize + labelStartPadding),
                 fontSize = 14.sp
             )
@@ -297,10 +291,7 @@ private val iconSize = 28.dp
 private val labelStartPadding = 16.dp
 
 @Composable
-private fun MainItemRow(
-    item: NavigationDrawerSheetElement.Item,
-    modifier: Modifier = Modifier
-) {
+private fun MainItemRow(item: NavigationDrawerSheetElement.Item, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically

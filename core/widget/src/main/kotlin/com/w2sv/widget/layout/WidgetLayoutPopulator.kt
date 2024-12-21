@@ -13,12 +13,12 @@ import com.w2sv.androidutils.appwidget.crossVisualize
 import com.w2sv.androidutils.appwidget.setBackgroundColor
 import com.w2sv.androidutils.appwidget.setColorFilter
 import com.w2sv.androidutils.graphics.getAlphaSetColor
-import com.w2sv.common.constants.Extra
+import com.w2sv.common.AppExtra
 import com.w2sv.core.widget.R
 import com.w2sv.domain.model.WifiStatus
 import com.w2sv.domain.repository.WidgetRepository
 import com.w2sv.networking.WifiStatusGetter
-import com.w2sv.widget.CopyPropertyToClipboardBroadcastReceiver
+import com.w2sv.widget.CopyPropertyToClipboardActivity
 import com.w2sv.widget.PendingIntentCode
 import com.w2sv.widget.WifiWidgetProvider
 import com.w2sv.widget.data.appearanceBlocking
@@ -41,10 +41,7 @@ internal class WidgetLayoutPopulator @Inject constructor(
     private val appearance = widgetRepository.appearanceBlocking
     private val colors = appearance.getColors(context)
 
-    fun populate(
-        widget: RemoteViews,
-        appWidgetId: Int
-    ): RemoteViews =
+    fun populate(widget: RemoteViews, appWidgetId: Int): RemoteViews =
         widget
             .apply {
                 setContentLayout(
@@ -77,10 +74,10 @@ internal class WidgetLayoutPopulator @Inject constructor(
 
                 setPendingIntentTemplate(
                     R.id.wifi_property_list_view,
-                    PendingIntent.getBroadcast(
+                    PendingIntent.getActivity(
                         context,
                         PendingIntentCode.CopyPropertyToClipboard.ordinal,
-                        Intent(context, CopyPropertyToClipboardBroadcastReceiver::class.java),
+                        Intent(context, CopyPropertyToClipboardActivity::class.java),
                         PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                     )
                 )
@@ -170,7 +167,7 @@ internal class WidgetLayoutPopulator @Inject constructor(
                         )
                     )
                         .putExtra(
-                            Extra.INVOKE_WIDGET_CONFIGURATION_SCREEN,
+                            AppExtra.INVOKE_WIDGET_CONFIGURATION_SCREEN,
                             true
                         ),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

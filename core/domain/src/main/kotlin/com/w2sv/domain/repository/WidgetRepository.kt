@@ -17,7 +17,9 @@ interface WidgetRepository {
     val opacity: DataStoreFlow<Float>
     val fontSize: DataStoreFlow<FontSize>
 
+    val sortedEnabledWifiProperties: Flow<List<WifiProperty>>
     val wifiPropertyEnablementMap: DataStoreFlowMap<WifiProperty, Boolean>
+    val orderedWifiProperties: DataStoreFlow<List<WifiProperty>>
     val ipSubPropertyEnablementMap: DataStoreFlowMap<WifiProperty.IP.SubProperty, Boolean>
     val bottomRowElementEnablementMap: DataStoreFlowMap<WidgetBottomBarElement, Boolean>
     val refreshingParametersEnablementMap: DataStoreFlowMap<WidgetRefreshingParameter, Boolean>

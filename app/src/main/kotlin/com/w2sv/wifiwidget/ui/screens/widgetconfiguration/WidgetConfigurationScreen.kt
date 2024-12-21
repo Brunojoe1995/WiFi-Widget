@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FloatingActionButton
@@ -44,15 +45,16 @@ import com.w2sv.androidutils.BackPressHandler
 import com.w2sv.wifiwidget.R
 import com.w2sv.wifiwidget.ui.designsystem.AppSnackbarHost
 import com.w2sv.wifiwidget.ui.designsystem.AppSnackbarVisuals
-import com.w2sv.wifiwidget.ui.designsystem.BackButtonHeaderWithDivider
+import com.w2sv.wifiwidget.ui.designsystem.BackButtonHeaderWithBottomDivider
 import com.w2sv.wifiwidget.ui.designsystem.Easing
 import com.w2sv.wifiwidget.ui.designsystem.HorizontalSlideTransitions
 import com.w2sv.wifiwidget.ui.designsystem.LocalSnackbarHostState
 import com.w2sv.wifiwidget.ui.designsystem.SnackbarKind
-import com.w2sv.wifiwidget.ui.designsystem.showSnackbarAndDismissCurrentIfApplicable
+import com.w2sv.wifiwidget.ui.designsystem.dismissCurrentAndShow
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.configuration.WidgetConfigurationColumn
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.configuration.rememberWidgetConfigurationCardProperties
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.dialog.ColorPickerDialog
+import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.dialog.OptionalPropertyReorderingDiscoveryDialog
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.dialog.PropertyInfoDialog
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.dialog.RefreshIntervalConfigurationDialog
 import com.w2sv.wifiwidget.ui.screens.widgetconfiguration.components.dialog.model.WidgetConfigurationScreenDialog
@@ -117,10 +119,12 @@ fun WidgetConfigurationScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding() + 16.dp)
         ) {
-            BackButtonHeaderWithDivider(
+            BackButtonHeaderWithBottomDivider(
                 title = stringResource(id = R.string.widget_configuration),
                 onBackButtonClick = onBack
             )
+
+            val scrollState = rememberScrollState()
 
             var dialogData by rememberSaveable(stateSaver = WidgetConfigurationScreenDialog.nullableStateSaver) {
                 mutableStateOf(null)
@@ -133,6 +137,8 @@ fun WidgetConfigurationScreen(
                     onDismissRequest = remember { { dialogData = null } }
                 )
             }
+
+            OptionalPropertyReorderingDiscoveryDialog(scrollState)
 
             WidgetConfigurationColumn(
                 cardProperties = rememberWidgetConfigurationCardProperties(
@@ -154,7 +160,8 @@ fun WidgetConfigurationScreen(
                                 WidgetConfigurationScreenDialog.RefreshIntervalConfiguration
                         }
                     }
-                )
+                ),
+                scrollState = scrollState
             )
         }
     }
@@ -222,7 +229,7 @@ private fun onBack(
         backPressHandler.invoke(
             onFirstPress = {
                 scope.launch {
-                    snackbarHostState.showSnackbarAndDismissCurrentIfApplicable(
+                    snackbarHostState.dismissCurrentAndShow(
                         AppSnackbarVisuals(
                             msg = context.getString(R.string.go_back_on_unsaved_changes_warning),
                             kind = SnackbarKind.Warning

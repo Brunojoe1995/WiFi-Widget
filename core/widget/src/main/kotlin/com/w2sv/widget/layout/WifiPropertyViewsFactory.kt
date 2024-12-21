@@ -10,17 +10,19 @@ import androidx.core.text.buildSpannedString
 import androidx.core.text.scale
 import androidx.core.text.subscript
 import com.w2sv.androidutils.appwidget.setBackgroundColor
+import com.w2sv.common.utils.log
 import com.w2sv.core.widget.R
 import com.w2sv.domain.model.FontSize
 import com.w2sv.domain.model.WifiProperty
 import com.w2sv.domain.repository.WidgetRepository
-import com.w2sv.kotlinutils.coroutines.enabledKeys
-import com.w2sv.widget.CopyPropertyToClipboardBroadcastReceiver
+import com.w2sv.kotlinutils.coroutines.flow.enabledKeys
+import com.w2sv.widget.CopyPropertyToClipboardActivity
 import com.w2sv.widget.data.appearanceBlocking
 import com.w2sv.widget.model.WidgetColors
 import com.w2sv.widget.utils.setTextView
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import slimber.log.i
@@ -42,14 +44,14 @@ internal class WifiPropertyViewsFactory @Inject constructor(
 
         viewData = runBlocking {
             viewDataFactory(
-                properties = widgetRepository.wifiPropertyEnablementMap.enabledKeys(),
+                properties = widgetRepository.sortedEnabledWifiProperties.first(),
                 ipSubProperties = widgetRepository.ipSubPropertyEnablementMap
                     .enabledKeys()
                     .toSet()
             )
                 .toList()
         }
-            .also { i { "Set propertyViewData=$it" } }
+            .log { "Set propertyViewData=$it" }
 
         widgetRepository.appearanceBlocking.let {
             widgetColors = it.getColors(context)
@@ -69,7 +71,7 @@ internal class WifiPropertyViewsFactory @Inject constructor(
                 fontSize = fontSize
             )
         } catch (e: IndexOutOfBoundsException) { // Fix irreproducible IndexOutOfBoundsException observed in play console
-            i { e.toString() }
+            e.log()
             RemoteViews(context.packageName, R.layout.wifi_property)
         }
 
@@ -104,6 +106,7 @@ private fun inflatePropertyLayout(
 ): RemoteViews =
     RemoteViews(packageName, R.layout.wifi_property)
         .apply {
+            i { "Inflating $viewData" }
             setTextView(
                 viewId = R.id.property_label_tv,
                 text = if (viewData is WifiProperty.ViewData.NonIP) {
@@ -130,34 +133,39 @@ private fun inflatePropertyLayout(
 
             setOnClickFillInIntent(
                 R.id.wifi_property_layout,
-                CopyPropertyToClipboardBroadcastReceiver.Args.getIntent(
+                CopyPropertyToClipboardActivity.Args.getIntent(
                     propertyLabel = viewData.label,
                     propertyValue = viewData.value
                 )
             )
 
-            viewData.ipPropertyOrNull?.prefixLengthText?.let { prefixLengthText ->
-                setViewVisibility(R.id.prefix_length_row, View.VISIBLE)
+            viewData.ipPropertyOrNull?.nonEmptySubPropertyValuesOrNull?.let { subPropertyValues ->
+                setViewVisibility(R.id.ip_sub_property_row, View.VISIBLE)
 
-                setTextView(
-                    viewId = R.id.prefix_length_tv,
-                    text = prefixLengthText,
-                    size = fontSize.subscriptSize,
-                    color = widgetColors.secondary
-                )
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    setColorStateList(
-                        R.id.prefix_length_tv,
-                        "setBackgroundTintList",
-                        ColorStateList.valueOf(widgetColors.ipSubPropertyBackgroundColor)
+                val subPropertyViewIterator = sequenceOf(R.id.ip_sub_property_tv_2, R.id.ip_sub_property_tv_1).iterator()
+                subPropertyValues.reversed().forEach { value ->
+                    val viewId = subPropertyViewIterator.next()
+                    setTextView(
+                        viewId = viewId,
+                        text = value,
+                        size = fontSize.subscriptSize,
+                        color = widgetColors.secondary
                     )
-                } else {
-                    setBackgroundColor(
-                        R.id.prefix_length_tv,
-                        widgetColors.ipSubPropertyBackgroundColor
-                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        setColorStateList(
+                            viewId,
+                            "setBackgroundTintList",
+                            ColorStateList.valueOf(widgetColors.ipSubPropertyBackgroundColor)
+                        )
+                    } else {
+                        setBackgroundColor(
+                            viewId,
+                            widgetColors.ipSubPropertyBackgroundColor
+                        )
+                    }
                 }
-            } ?: setViewVisibility(R.id.prefix_length_row, View.GONE)
+                subPropertyViewIterator.forEachRemaining { setViewVisibility(it, View.GONE) }
+            } ?: setViewVisibility(R.id.ip_sub_property_row, View.GONE)
         }
 
 private const val IP_LABEL = "IP"

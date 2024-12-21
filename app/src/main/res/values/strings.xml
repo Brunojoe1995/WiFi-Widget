@@ -59,7 +59,7 @@
     <string name="versions">Versions</string>
     <string name="background_opacity">Background\nopacity</string>
     <string name="font_size">Font size</string>
-    <string name="widget_pinning_not_supported_by_your_device_launcher">Widget pinning is not supported by your device launcher.</string>
+    <string name="widget_pinning_failed">In-app widget pinning is not supported by your device. You\'ll need to do it from your device\'s home screen.</string>
     <string name="widget_configuration">Widget Configuration</string>
     <string name="open_the_refresh_interval_configuration_dialog">Open the refresh interval configuration dialog.</string>
     <string name="refresh_interval">Refresh Interval</string>
@@ -79,4 +79,9 @@
     <string name="share_explanation">Share the app with someone who might appreciate it</string>
     <string name="report_a_bug_explanation">Help make the app better!</string>
     <string name="go_back_on_unsaved_changes_warning">Going back now will lead to all your unsaved changes being lost.</string>
+    <string name="restore_default_order">Restore default order</string>
+    <string name="move_disabled_properties_to_the_bottom">Move disabled properties to the bottom</string>
+    <string name="show_dropdown_menu">Show dropdown menu</string>
+    <string name="okay">Okay!</string>
+    <string name="property_reordering_discovery_dialog_text">You can change the order in which the properties appear on the widget by long-clicking on a property and moving it to a different position.</string>
 </resources>

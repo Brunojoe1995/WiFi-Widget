@@ -6,16 +6,13 @@ import android.net.wifi.ScanResult
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.w2sv.common.utils.SuspendingLazy
-import com.w2sv.common.utils.log
 import com.w2sv.core.networking.R
 import com.w2sv.domain.model.WifiProperty
-import com.w2sv.networking.extensions.fetchFromUrl
-import com.w2sv.networking.extensions.ipAddresses
 import com.w2sv.networking.extensions.linkProperties
 import com.w2sv.networking.model.IFConfigData
 import com.w2sv.networking.model.IPAddress
-import java.io.IOException
 import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -25,7 +22,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
-import slimber.log.i
 
 private typealias GetSystemIPAddresses = () -> List<IPAddress>
 private typealias GetIFConfigData = suspend () -> Result<IFConfigData>
@@ -42,9 +38,9 @@ internal class WidgetWifiPropertyViewDataFactoryImpl @Inject constructor(
         ipSubProperties: Set<WifiProperty.IP.SubProperty>
     ): Flow<WifiProperty.ViewData> {
         val systemIPAddresses by lazy {
-            connectivityManager.ipAddresses().log { "Got IP Addresses" }
+            IPAddress.systemAddresses(connectivityManager)
         }
-        val ifConfigData = SuspendingLazy<Result<IFConfigData>> {
+        val ifConfigData = SuspendingLazy {
             IFConfigData.fetch(httpClient)
         }
 
@@ -231,15 +227,24 @@ internal class WidgetWifiPropertyViewDataFactoryImpl @Inject constructor(
                 WifiProperty.ViewData.IPProperty(
                     label = label,
                     value = ipAddress.hostAddressRepresentation,
-                    prefixLengthText = if (ipSubProperties.contains(showPrefixLengthSubProperty)) "/${ipAddress.prefixLength}" else null
+                    subPropertyValues = buildList {
+                        if (ipSubProperties.contains(showSubnetMaskSubProperty)) {
+                            ipAddress.asV4OrNull?.subnetMask?.let { subnetMask ->
+                                add(subnetMask)
+                            }
+                        }
+                        if (ipSubProperties.contains(showPrefixLengthSubProperty) && ipAddress.prefixLength != null) {
+                            add("/${ipAddress.prefixLength}")
+                        }
+                    }
                 )
             }
         )
 
     private fun WifiProperty.IP.V6Only.getAddresses(systemIPAddresses: GetSystemIPAddresses): List<IPAddress> =
         when (this) {
-            WifiProperty.IP.V6Only.ULA -> systemIPAddresses().filter { it.isUniqueLocal }
-            WifiProperty.IP.V6Only.GUA -> systemIPAddresses().filter { it.isGlobalUnicast }
+            WifiProperty.IP.V6Only.ULA -> systemIPAddresses().filter { it.asV6OrNull?.isUniqueLocal == true }
+            WifiProperty.IP.V6Only.GUA -> systemIPAddresses().filter { it.asV6OrNull?.isGlobalUnicast == true }
         }
 
     private suspend fun WifiProperty.IP.V4AndV6.getAddresses(
@@ -265,13 +270,16 @@ internal class WidgetWifiPropertyViewDataFactoryImpl @Inject constructor(
 
             WifiProperty.IP.V4AndV6.Public -> buildList {
                 versionsToBeIncluded.forEach { version ->
-                    fetchPublicIPAddress(httpClient, version)
+                    IPAddress.fetchPublic(httpClient, version)
                         .onSuccess { add(it) }
                 }
             }
         }
 }
 
+/**
+ * @return the result of [onSuccess] or the simpleName of the held exception.
+ */
 private fun Result<IFConfigData>.viewDataValue(onSuccess: (IFConfigData) -> String): String =
     requireNotNull(
         getOrNull()
@@ -314,42 +322,17 @@ private inline fun List<IPAddress>.filterByVersionAndPredicate(
 /**
  * [Reference](https://stackoverflow.com/a/52663352/12083276)
  */
-private fun textualIPv4Representation(address: Int): String? =
-    InetAddress.getByAddress(
-        ByteBuffer
-            .allocate(Integer.BYTES)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .putInt(address)
-            .array()
-    )
+@VisibleForTesting
+internal fun textualIPv4Representation(address: Int): String? =
+    InetAddress
+        .getByAddress(
+            ByteBuffer
+                .allocate(Integer.BYTES)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(address)
+                .array()
+        )
         .hostAddress
-
-private suspend fun fetchPublicIPAddress(
-    httpClient: OkHttpClient,
-    version: IPAddress.Version
-): Result<IPAddress> {
-    i { "Fetching public $version address" }
-    return httpClient.fetchFromUrl(
-        when (version) {
-            IPAddress.Version.V4 -> "https://api.ipify.org"
-            IPAddress.Version.V6 -> "https://api6.ipify.org"
-        }
-    ) { address ->
-        if (version.ofCorrectFormat(address)) {
-            IPAddress(
-                prefixLength = version.minPrefixLength,
-                hostAddress = address.log { "Got public $version address $it" },
-                isLinkLocal = false,
-                isSiteLocal = false,
-                isAnyLocal = false,
-                isLoopback = false,
-                isMulticast = false
-            )
-        } else {
-            throw IOException("Obtained $version address $address of incorrect format")
-        }
-    }
-}
 
 /**
  * [Reference](https://stackoverflow.com/a/58646104/12083276)
